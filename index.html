@@ -67,8 +67,10 @@
     </style>
 </head>
 <body>
-    <script>
-        // Firebase 配置（请替换为你的 Firebase 配置信息）
+    <script type="module">
+    // Firebase v9 需要按模块方式导入
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
         const firebaseConfig = {
             apiKey: "AIzaSyDm4YwBxy-8LXM48ZBOboSWmlboesy0f18",
             authDomain: "roof-for-vancouver.firebaseapp.com",
@@ -79,9 +81,32 @@
             appId: "1:635087930942:web:f7144bf1f50c6f8462b36f"
         };
         
-        // 初始化 Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+         const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // 提交评论
+    window.submitComment = function () {
+        let commentText = document.getElementById("commentInput").value;
+        if (commentText.trim() !== "") {
+            const commentsRef = ref(database, 'comments');
+            push(commentsRef, {
+                text: commentText,
+                timestamp: Date.now()
+            });
+            document.getElementById("commentInput").value = "";
+        }
+    };
+
+    // 实时监听 Firebase，更新评论区
+    const commentsRef = ref(database, 'comments');
+    onChildAdded(commentsRef, (snapshot) => {
+        let commentData = snapshot.val();
+        let commentSection = document.getElementById("commentSection");
+        let newComment = document.createElement("div");
+        newComment.classList.add("comment-box");
+        newComment.textContent = commentData.text;
+        commentSection.appendChild(newComment);
+    });
     </script>
 
     <div class="container">
@@ -91,29 +116,5 @@
         <button onclick="submitComment()">Submit</button>
         <div class="comment-section" id="commentSection"></div>
     </div>
-
-    <script>
-        function submitComment() {
-            let commentText = document.getElementById("commentInput").value;
-            if (commentText.trim() !== "") {
-                let newCommentRef = database.ref('comments').push();
-                newCommentRef.set({
-                    text: commentText,
-                    timestamp: Date.now()
-                });
-                document.getElementById("commentInput").value = "";
-            }
-        }
-
-        // 监听 Firebase 数据变化，实时加载评论
-        database.ref('comments').on('child_added', (snapshot) => {
-            let commentData = snapshot.val();
-            let commentSection = document.getElementById("commentSection");
-            let newComment = document.createElement("div");
-            newComment.classList.add("comment-box");
-            newComment.textContent = commentData.text;
-            commentSection.appendChild(newComment);
-        });
-    </script>
 </body>
 </html>
